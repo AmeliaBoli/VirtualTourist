@@ -16,7 +16,7 @@ class ViewController: UIViewController, MKMapViewDelegate {
 
     let mapManager = MapStateManager.sharedInstance
 
-    var pinLocations = [MKPointAnnotation]()
+    var pinLocations = [AnnotationWithObject]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -40,8 +40,9 @@ class ViewController: UIViewController, MKMapViewDelegate {
 
         if let pinLocations = pinLocations as? [PinLocation] {
             for location in pinLocations {
-                let annotation = MKPointAnnotation()
+                let annotation = AnnotationWithObject()
                 annotation.coordinate = location.coordinate
+                annotation.pinLocation = location
                 self.pinLocations.append(annotation)
             }
         }
@@ -49,6 +50,10 @@ class ViewController: UIViewController, MKMapViewDelegate {
         loadMap()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(true)
+        navigationController?.setNavigationBarHidden(true, animated: false)
+    }
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -100,9 +105,28 @@ class ViewController: UIViewController, MKMapViewDelegate {
         let point = sender.location(in: mapView)
         let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
 
-        let annotation = MKPointAnnotation()
+        let pinLocation = PinLocation(coordinate: coordinate)
+
+        let annotation = AnnotationWithObject()
         annotation.coordinate = coordinate
+        annotation.pinLocation = pinLocation
+        pinLocations.append(annotation)
         mapView.addAnnotation(annotation)
+
+    }
+
+    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        mapView.deselectAnnotation(view.annotation, animated: false)
+        performSegue(withIdentifier: "showPhotos", sender: view)
+    }
+
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "showPhotos",
+            let annotationView = sender as? MKAnnotationView,
+            let pinLocation = (annotationView.annotation as? AnnotationWithObject)?.pinLocation,
+            let controller = segue.destination as? PhotosViewController {
+                controller.pinLocation = pinLocation
+        }
     }
 }
 
