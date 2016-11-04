@@ -17,10 +17,7 @@ class PhotosViewController: UIViewController {
     @IBOutlet weak var newCollectionButton: UIBarButtonItem!
 
     var pinLocation: PinLocation!
-
-    var coordinate: CLLocationCoordinate2D {
-        return CLLocationCoordinate2D(latitude: pinLocation.latitude, longitude: pinLocation.longitude)
-    }
+    var coordinate: CLLocationCoordinate2D!
 
     let flickrManager = FlickrInterface.sharedInstance
 
@@ -28,6 +25,8 @@ class PhotosViewController: UIViewController {
         super.viewDidLoad()
 
         navigationController?.setNavigationBarHidden(false, animated: false)
+
+        coordinate = CLLocationCoordinate2D(latitude: pinLocation.latitude, longitude: pinLocation.longitude)
 
         loadMap()
 
@@ -40,31 +39,9 @@ class PhotosViewController: UIViewController {
 
         var nextPage = 1
 
-        // TODO: Fetch next page for location
-        if let flickrStats = pinLocation {
-            nextPage = 1 //flickrStats.nextPage
-        }
-
-        flickrManager.getPlacesFindByLatLong(coordinate: coordinate, nextPage: nextPage) { success, result, error in
-            guard error == nil else {
-                // Todo
-                print(error!.localizedDescription)
-                return
-            }
-
-            guard let placeId = result else {
-                // TODO
-                print("There was an error with the place id")
-                return
-            }
-
-            self.flickrManager.getPhotos(placeId: placeId, completionHandlerForGetPhotos: { success, result, error in
-                if success {
-                    print(result?[0])
-                } else {
-                    print(error?.localizedDescription)
-                }
-            })
+        if let flickrStats = pinLocation.flickrStats {
+            flickrStats.currentPage += 1
+            nextPage = Int(flickrStats.currentPage)
         }
     }
 

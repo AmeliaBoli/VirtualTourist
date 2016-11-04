@@ -1,5 +1,5 @@
 //
-//  FlickrInterface.swift
+//  FlickrService.swift
 //  VirtualTourist
 //
 //  Created by Amelia Boli on 10/23/16.
@@ -9,10 +9,10 @@
 import Foundation
 import CoreLocation
 
-class FlickrInterface: Networking {
+class FlickrService: Networking {
 
     // MARK: Singleton
-    static var sharedInstance = FlickrInterface()
+    static var sharedInstance = FlickrService()
     private init () { }
 
     // MARK: Properties
