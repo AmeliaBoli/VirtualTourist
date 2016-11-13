@@ -2,12 +2,13 @@
 //  PinLocation+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by Amelia Boli on 10/24/16.
+//  Created by Amelia Boli on 11/6/16.
 //  Copyright © 2016 Appogenic. All rights reserved.
 //
 
 import Foundation
 import CoreData
+
 
 extension PinLocation {
 
@@ -18,5 +19,23 @@ extension PinLocation {
     @NSManaged public var latitude: Double
     @NSManaged public var longitude: Double
     @NSManaged public var flickrStats: FlickrStats?
+    @NSManaged public var photo: NSSet?
+
+}
+
+// MARK: Generated accessors for photo
+extension PinLocation {
+
+    @objc(addPhotoObject:)
+    @NSManaged public func addToPhoto(_ value: Photo)
+
+    @objc(removePhotoObject:)
+    @NSManaged public func removeFromPhoto(_ value: Photo)
+
+    @objc(addPhoto:)
+    @NSManaged public func addToPhoto(_ values: NSSet)
+
+    @objc(removePhoto:)
+    @NSManaged public func removeFromPhoto(_ values: NSSet)
 
 }

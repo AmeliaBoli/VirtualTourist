@@ -13,13 +13,12 @@ class PhotosViewController: UIViewController {
 
     @IBOutlet weak var label: UILabel!
     @IBOutlet weak var mapView: MKMapView!
-    @IBOutlet weak var photosCollectionView: UICollectionView!
     @IBOutlet weak var newCollectionButton: UIBarButtonItem!
+    @IBOutlet weak var noImagesLabel: UILabel!
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
 
     var pinLocation: PinLocation!
     var coordinate: CLLocationCoordinate2D!
-
-    let flickrManager = FlickrInterface.sharedInstance
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,20 +28,6 @@ class PhotosViewController: UIViewController {
         coordinate = CLLocationCoordinate2D(latitude: pinLocation.latitude, longitude: pinLocation.longitude)
 
         loadMap()
-
-        // if fetching images { newCollectionButton.isEnabled = false }
-
-         //once fetching images is complete { newCollectionButton.isEnabled = true } and
-        if photosCollectionView.numberOfItems(inSection: 0) == 0 {
-            label.isHidden = false
-        }
-
-        var nextPage = 1
-
-        if let flickrStats = pinLocation.flickrStats {
-            flickrStats.currentPage += 1
-            nextPage = Int(flickrStats.currentPage)
-        }
     }
 
     func loadMap() {
@@ -57,5 +42,16 @@ class PhotosViewController: UIViewController {
     }
 
     @IBAction func newCollectionPressed(_ sender: UIBarButtonItem) {
+        let children = childViewControllers
+        let photosCollectionVC = (children.flatMap() { $0 as? PhotosCollectionViewController }).first
+        photosCollectionVC?.refreshPhotos()
+    }
+
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "photoCollection",
+            let controller = segue.destination as? PhotosCollectionViewController {
+            controller.pinLocation = pinLocation
+            controller.parentPhotosViewController = self
+        }
     }
 }

@@ -15,6 +15,7 @@ class ViewController: UIViewController, MKMapViewDelegate {
     @IBOutlet weak var mapView: MKMapView!
 
     let mapManager = MapStateManager.sharedInstance
+    var stack: CoreDataStack!
 
     var pinLocations = [AnnotationWithObject]()
     
@@ -25,7 +26,7 @@ class ViewController: UIViewController, MKMapViewDelegate {
             fatalError("Could not find the AppDelegate")
         }
 
-        let stack = delegate.stack
+        stack = delegate.stack
 
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PinLocation")
 
@@ -98,21 +99,40 @@ class ViewController: UIViewController, MKMapViewDelegate {
     // I got this code from this Stack Overflow post: http://stackoverflow.com/questions/34431459/ios-swift-how-to-add-pinpoint-to-map-on-touch-and-get-detailed-address-of-th
     @IBAction func didPressAndHold(_ sender: UILongPressGestureRecognizer) {
 
-        guard sender.state == .ended else {
+        guard sender.state == .began else {
             return
         }
 
         let point = sender.location(in: mapView)
         let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
+        print("=====\n--- 1. coordinate is \(coordinate)")
 
-        let pinLocation = PinLocation(coordinate: coordinate)
+//        // if a pin with that coordinate already exists, cancel
+//        let pinFetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PinLocation")
+//        let coordinatePredicate = NSPredicate(format: "latitude == %@", coordinate.latitude)
+//        pinFetchRequest.predicate = coordinatePredicate
+//
+//        do {
+//            if let existingPins = try stack.context.fetch(pinFetchRequest) as? [PinLocation] {
+//                print("--- 2. coordinate is \(existingPins.first?.coordinate.latitude)")
+//                if existingPins.count > 0 {
+//                    return
+//                }
+//            }
+//        } catch {
+//            #if DEBUG
+//                print(error.localizedDescription)
+//            #endif
+//            return
+//        }
+
+        let pinLocation = PinLocation(coordinate: coordinate, context: stack.context)
 
         let annotation = AnnotationWithObject()
         annotation.coordinate = coordinate
         annotation.pinLocation = pinLocation
         pinLocations.append(annotation)
         mapView.addAnnotation(annotation)
-
     }
 
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {

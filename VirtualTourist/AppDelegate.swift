@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -19,6 +20,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         stack?.autoSave(delayInSeconds: 60)
+
+        let pinFetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PinLocation")
+        do {
+            if let pins = try stack?.context.fetch(pinFetchRequest) as? [PinLocation] {
+                for pin in pins {
+                    print("$$$$$$$$$$ The pins are \(pin.latitude)")
+                }
+            }
+        } catch {
+            print(error.localizedDescription)
+        }
+
         return true
     }
 

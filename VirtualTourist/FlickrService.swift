@@ -6,7 +6,7 @@
 //  Copyright © 2016 Appogenic. All rights reserved.
 //
 
-import Foundation
+import UIKit
 import CoreLocation
 
 class FlickrService: Networking {
@@ -67,16 +67,14 @@ class FlickrService: Networking {
     }
 
     // GET Calls
-    func getPlacesFindByLatLong(coordinate: CLLocationCoordinate2D, nextPage: Int, completionHandlerForPlaces: @escaping (_ success: Bool, _ placeId: String?, _ error: NSError?) -> Void) {
+    func getPlacesFindByLatLong(latitude: Double, longitude: Double, completionHandlerForPlaces: @escaping (_ success: Bool, _ placeId: String?, _ error: NSError?) -> Void) {
 
         let domain = "getPlacesFindByLatLong"
 
         let parameters: [String: Any] = [ParameterKeys.Method: Methods.PlacesFindByLatLon,
                                          ParameterKeys.ApiKey: Constants.ApiKey,
-                                         ParameterKeys.Lat: String(coordinate.latitude),
-                                         ParameterKeys.Lon: String(coordinate.longitude),
-                                         ParameterKeys.PerPage: Constants.ImagesPerPage,
-                                         ParameterKeys.Page: nextPage,
+                                         ParameterKeys.Lat: String(latitude),
+                                         ParameterKeys.Lon: String(longitude),
                                          ParameterKeys.Format: ParameterValues.Json,
                                          ParameterKeys.NoJSONCallback: ParameterValues.DisableJSONCallback]
 
@@ -89,7 +87,9 @@ class FlickrService: Networking {
 
         let request = URLRequest(url: url)
 
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         _ = taskForHTTPMethod(request: request) { result, error in
+            UIApplication.shared.isNetworkActivityIndicatorVisible = false
             guard error == nil else {
                 #if DEBUG
                     print("There was an error with taskForHTTPMethod")
@@ -116,8 +116,9 @@ class FlickrService: Networking {
 
                 guard let jsonData = result as? [String: Any],
                     let placeDataDict = jsonData["places"] as? [String: Any],
-                    let placeData = placeDataDict["place"] as? [[String: Any]] else {
-                        let error = "There was an error with results key in \(result)"
+                    let placeData = placeDataDict["place"] as? [[String: Any]],
+                    placeData.count > 0 else {
+                        let error = "There was an error with results key in \(result) or no place exists"
                         let nsError = self.createError(error: error, domain: domain)
                         completionHandlerForPlaces(false, nil, nsError)
                         return
@@ -137,13 +138,15 @@ class FlickrService: Networking {
         }
     }
 
-    func getPhotos(placeId: String, completionHandlerForGetPhotos: @escaping (_ success: Bool, _ photoData: [[String: Any]]?, _ error: NSError?) -> Void) {
+    func getPhotos(placeId: String, nextPage: Int, completionHandlerForGetPhotos: @escaping (_ success: Bool, _ photoData: [String: Any]?, _ error: NSError?) -> Void) {
 
         let domain = "getPhotos"
 
         let parameters: [String: Any] = [ParameterKeys.Method: Methods.PhotosSearch,
                                          ParameterKeys.ApiKey: Constants.ApiKey,
                                          ParameterKeys.PlaceId: placeId,
+                                         ParameterKeys.PerPage: Constants.ImagesPerPage,
+                                         ParameterKeys.Page: nextPage,
                                          ParameterKeys.Extras: ParameterValues.MediumUrl,
                                          ParameterKeys.Format: ParameterValues.Json,
                                          ParameterKeys.NoJSONCallback: ParameterValues.DisableJSONCallback]
@@ -157,7 +160,10 @@ class FlickrService: Networking {
 
         let request = URLRequest(url: url)
 
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         _ = taskForHTTPMethod(request: request) { result, error in
+            UIApplication.shared.isNetworkActivityIndicatorVisible = false
+
             guard error == nil else {
                 #if DEBUG
                     print("There was an error with taskForHTTPMethod")
@@ -182,20 +188,14 @@ class FlickrService: Networking {
                     return
                 }
 
-                guard let jsonData = result as? [String: Any],
-                    let photosDataDict = jsonData["photos"] as? [String: Any],
-                    let page = photosDataDict["page"] as? Int,
-                    let numberOfPages = photosDataDict["pages"] as? Int,
-                    let perPage = photosDataDict["perpage"] as? Int,
-                    let totalNumberOfPhotos = photosDataDict["total"] as? String,
-                    let photos = photosDataDict["photo"] as? [[String: Any]] else {
+                guard let jsonData = result as? [String: Any] else {
                         let error = "There was an error with parsing the data in \(result)"
                         let nsError = self.createError(error: error, domain: domain)
                         completionHandlerForGetPhotos(false, nil, nsError)
                         return
                 }
 
-                completionHandlerForGetPhotos(true, photos, nil)
+                completionHandlerForGetPhotos(true, jsonData, nil)
             }
         }
     }

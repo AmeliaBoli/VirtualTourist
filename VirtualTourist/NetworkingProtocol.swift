@@ -12,7 +12,7 @@ protocol Networking {
     func substituteKeyInMethod(method: String, key: String, value: String) -> String?
     func urlFromComponents(scheme: String, host: String, path: String?, withPathExtension: String?, parameters: [String: Any]?) -> URL?
     func taskForHTTPMethod(request: URLRequest, completionHandlerForMethod: @escaping (_ result: Data?, _ error: NSError?) -> Void) -> URLSessionDataTask
-    func deserializeJSONWithCompletionHandler(data: Data, completionHandlerForDeserializeJSON: (_ result: Any, _ error: Error?) -> Void)
+    func deserializeJSONWithCompletionHandler(data: Data, completionHandlerForDeserializeJSON: (_ result: Any?, _ error: Error?) -> Void)
     func sendError(error: String, domain: String, completionHandlerForSendError: (_ result: Data?, _ error: NSError?) -> Void)
     func manageNetworkIndicator(turnOn: Bool)
 }
@@ -105,7 +105,7 @@ extension Networking {
         return task
     }
 
-    func deserializeJSONWithCompletionHandler(data: Data, completionHandlerForDeserializeJSON: (_ result: Any, _ error: Error?) -> Void) {
+    func deserializeJSONWithCompletionHandler(data: Data, completionHandlerForDeserializeJSON: (_ result: Any?, _ error: Error?) -> Void) {
         var parsedData: Any?
 
         do {

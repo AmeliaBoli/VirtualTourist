@@ -12,7 +12,7 @@ import CoreLocation
 
 public class PinLocation: NSManagedObject {
 
-    convenience init(coordinate: CLLocationCoordinate2D) {
+    convenience init(coordinate: CLLocationCoordinate2D, context: NSManagedObjectContext) {
 
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate,
             let stack = appDelegate.stack else {
@@ -25,6 +25,7 @@ public class PinLocation: NSManagedObject {
             self.init(entity: entity, insertInto: context)
             self.latitude = coordinate.latitude
             self.longitude = coordinate.longitude
+            self.flickrStats = FlickrStats(context: context)
         } else {
             fatalError("A PinLocation could not be created")
         }
