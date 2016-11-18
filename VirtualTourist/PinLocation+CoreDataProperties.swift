@@ -2,7 +2,7 @@
 //  PinLocation+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by Amelia Boli on 11/6/16.
+//  Created by Amelia Boli on 11/13/16.
 //  Copyright © 2016 Appogenic. All rights reserved.
 //
 
@@ -16,6 +16,7 @@ extension PinLocation {
         return NSFetchRequest<PinLocation>(entityName: "PinLocation");
     }
 
+    @NSManaged public var flickrPlaceId: String?
     @NSManaged public var latitude: Double
     @NSManaged public var longitude: Double
     @NSManaged public var flickrStats: FlickrStats?

@@ -105,26 +105,6 @@ class ViewController: UIViewController, MKMapViewDelegate {
 
         let point = sender.location(in: mapView)
         let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
-        print("=====\n--- 1. coordinate is \(coordinate)")
-
-//        // if a pin with that coordinate already exists, cancel
-//        let pinFetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PinLocation")
-//        let coordinatePredicate = NSPredicate(format: "latitude == %@", coordinate.latitude)
-//        pinFetchRequest.predicate = coordinatePredicate
-//
-//        do {
-//            if let existingPins = try stack.context.fetch(pinFetchRequest) as? [PinLocation] {
-//                print("--- 2. coordinate is \(existingPins.first?.coordinate.latitude)")
-//                if existingPins.count > 0 {
-//                    return
-//                }
-//            }
-//        } catch {
-//            #if DEBUG
-//                print(error.localizedDescription)
-//            #endif
-//            return
-//        }
 
         let pinLocation = PinLocation(coordinate: coordinate, context: stack.context)
 

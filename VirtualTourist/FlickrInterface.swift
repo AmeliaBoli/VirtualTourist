@@ -30,70 +30,81 @@ class FlickrInterface {
     // MARK: Methods
     func getPhotos(pinLocation: PinLocation, completionHandler: @escaping (_ success: Bool, _ error: String?, _ photos: [Photo]?) -> Void) {
 
+        //var pinLocation = pinLocation
 
-        flickrManager.getPlacesFindByLatLong(latitude: pinLocation.latitude, longitude: pinLocation.longitude) { success, result, error in
-            guard error == nil else {
-                // Todo
-                print(error!.localizedDescription)
-                completionHandler(false, error!.localizedDescription, nil)
-                return
-            }
-
-            guard let placeId = result else {
-                // TODO
-                print("There was an error with the place id")
-                completionHandler(false, "There was an error with the place id", nil)
-                return
-            }
-
-            var nextPage = 1
-
-            if let flickrStats = pinLocation.flickrStats {
-                nextPage = self.determineNextPage(flickrStats: flickrStats)
-            }
-
-            self.flickrManager.getPhotos(placeId: placeId, nextPage: nextPage, completionHandlerForGetPhotos: { success, result, error in
-
-                guard success,
-                    error == nil,
-                    let result = result else {
-                        var generalError = "There was a problem retrieving photos from Flickr"
-
-                        if let error = error {
-                            generalError = error.localizedDescription
-                        }
-                        completionHandler(false, generalError, nil)
-                        return
-                }
-
-                guard let photosDataDict = result["photos"] as? [String: Any] else {
-                    completionHandler(false, "blah", nil)
+        if pinLocation.flickrPlaceId == nil {
+            flickrManager.getPlacesFindByLatLong(latitude: pinLocation.latitude, longitude: pinLocation.longitude) { success, result, error in
+                guard error == nil else {
+                    // Todo
+                    print(error!.localizedDescription)
+                    completionHandler(false, error!.localizedDescription, nil)
                     return
                 }
 
-                print(photosDataDict)
-                print(photosDataDict["photo"])
-
-                guard let page = photosDataDict["page"] as? Int16,
-                    let totalNumberOfPhotos = photosDataDict["total"] as? String else {
-                        completionHandler(false, "Something went wrong with parsing the data for the photos", nil)
-                        return
+                guard let placeId = result else {
+                    // TODO
+                    print("There was an error with the place id")
+                    completionHandler(false, "There was an error with the place id", nil)
+                    return
                 }
 
-                var photosToDisplay = [Photo]()
+                pinLocation.flickrPlaceId = placeId
 
-                if let photos = photosDataDict["photo"] as? [[String: Any]] {
-                    for photo in photos {
-                        guard let photoToSave = self.parseIndividualPhotoInfo(photoDict: photo, pinLocation: pinLocation) else {
-                            #if DEBUG
-                                print("There was a problem creating the Photo object for photo: \(photo)")
-                            #endif
-                            completionHandler(false, "There was a problem creating the Photo object for photo: \(photo)", nil)
-                            return
-                        }
-                        photosToDisplay.append(photoToSave)
+                self.callPhotoService(pinLocation: pinLocation) { success, error, photos in
+                    completionHandler(success, error, photos)
+                }
+            }
+        } else {
+            callPhotoService(pinLocation: pinLocation) { success, error, photos in
+                completionHandler(success, error, photos)
+            }
+        }
+    }
+
+    func callPhotoService(pinLocation: PinLocation, completionHandler: @escaping (_ success: Bool, _ error: String?, _ photos: [Photo]?) -> Void) {
+        guard let placeId = pinLocation.flickrPlaceId else {
+            #if DEBUG
+                print("There flickr place id could not be found")
+            #endif
+            return
+        }
+
+        var nextPage = 1
+
+        if let flickrStats = pinLocation.flickrStats {
+            nextPage = self.determineNextPage(flickrStats: flickrStats)
+        }
+
+        self.flickrManager.getPhotos(placeId: placeId, nextPage: nextPage, completionHandlerForGetPhotos: { success, result, error in
+
+
+            guard success,
+                error == nil,
+                let result = result else {
+                    var generalError = "There was a problem retrieving photos from Flickr"
+
+                    if let error = error {
+                        generalError = error.localizedDescription
                     }
-                } else if let photo = photosDataDict["photo"] as? [String: Any] {
+                    completionHandler(false, generalError, nil)
+                    return
+            }
+
+            guard let photosDataDict = result["photos"] as? [String: Any] else {
+                completionHandler(false, "blah", nil)
+                return
+            }
+
+            guard let page = photosDataDict["page"] as? Int16,
+                let totalNumberOfPhotos = photosDataDict["total"] as? String else {
+                    completionHandler(false, "Something went wrong with parsing the data for the photos", nil)
+                    return
+            }
+
+            var photosToDisplay = [Photo]()
+
+            if let photos = photosDataDict["photo"] as? [[String: Any]] {
+                for photo in photos {
                     guard let photoToSave = self.parseIndividualPhotoInfo(photoDict: photo, pinLocation: pinLocation) else {
                         #if DEBUG
                             print("There was a problem creating the Photo object for photo: \(photo)")
@@ -103,17 +114,25 @@ class FlickrInterface {
                     }
                     photosToDisplay.append(photoToSave)
                 }
-
-                // Save Stats
-                pinLocation.flickrStats?.currentPage = page
-                if let total = Int16(totalNumberOfPhotos) {
-                    pinLocation.flickrStats?.totalImages = total
+            } else if let photo = photosDataDict["photo"] as? [String: Any] {
+                guard let photoToSave = self.parseIndividualPhotoInfo(photoDict: photo, pinLocation: pinLocation) else {
+                    #if DEBUG
+                        print("There was a problem creating the Photo object for photo: \(photo)")
+                    #endif
+                    completionHandler(false, "There was a problem creating the Photo object for photo: \(photo)", nil)
+                    return
                 }
+                photosToDisplay.append(photoToSave)
+            }
 
-                completionHandler(true, nil, photosToDisplay)
-            })
-        }
+            // Save Stats
+            pinLocation.flickrStats?.currentPage = page
+            if let total = Int16(totalNumberOfPhotos) {
+                pinLocation.flickrStats?.totalImages = total
+            }
 
+            completionHandler(true, nil, photosToDisplay)
+        })
     }
 
     func determineNextPage(flickrStats: FlickrStats) -> Int {
@@ -141,20 +160,30 @@ class FlickrInterface {
             id = thisId
         }
 
+        let photoToSave = Photo(photoId: id, url: photoUrl, context: stack.context)
+        pinLocation.addToPhoto(photoToSave)
+        return photoToSave
+    }
+
+    func fetchImage(photo: Photo) {
+        guard let photoUrl = photo.url,
+            let url = URL(string: photoUrl) else {
+            #if DEBUG
+                print("There was a problem creating the url from \(photo.url)")
+            #endif
+            return
+        }
+
         var imageData: NSData? = nil
-        let url = URL(string: photoUrl)
 
         do {
-            imageData = try NSData(contentsOf: url!, options: .mappedIfSafe)
+            imageData = try NSData(contentsOf: url, options: .mappedIfSafe)
         } catch {
             #if DEBUG
                 print("There was a problem fetching the data from the image url: \(url)")
             #endif
         }
 
-        let photoToSave = Photo(photoId: id, url: photoUrl, image: imageData, context: stack.context)
-        pinLocation.addToPhoto(photoToSave)
-        return photoToSave
+        photo.image = imageData
     }
 }
-

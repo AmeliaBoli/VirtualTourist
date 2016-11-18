@@ -110,8 +110,9 @@ extension CoreDataCollectionViewController: NSFetchedResultsControllerDelegate {
         case .update:
             updatedIndexPaths.append(indexPath!)
         case .move:
-            deletedIndexPaths.append(indexPath!)
-            insertedIndexPaths.append(newIndexPath!)
+            return
+            //deletedIndexPaths.append(indexPath!)
+            //insertedIndexPaths.append(newIndexPath!)
         }
     }
 

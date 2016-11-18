@@ -96,7 +96,7 @@
                             </label>
                             <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="O9X-8o-FkP">
                                 <rect key="frame" x="169" y="405" width="37" height="37"/>
-                                <color key="color" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
+                                <color key="color" white="1" alpha="1" colorSpace="calibratedWhite"/>
                             </activityIndicatorView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -153,16 +153,23 @@
                                     <subviews>
                                         <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="KDq-JA-cJu">
                                             <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                                            <color key="backgroundColor" red="0.34907501935958862" green="0.50051766633987427" blue="0.56761491298675537" alpha="1" colorSpace="calibratedRGB"/>
                                         </imageView>
+                                        <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="hHt-9W-aYc">
+                                            <rect key="frame" x="15" y="15" width="20" height="20"/>
+                                        </activityIndicatorView>
                                     </subviews>
                                 </view>
                                 <constraints>
+                                    <constraint firstItem="hHt-9W-aYc" firstAttribute="centerY" secondItem="Hsn-gZ-B4Q" secondAttribute="centerY" id="HJx-YI-wEn"/>
                                     <constraint firstAttribute="bottom" secondItem="KDq-JA-cJu" secondAttribute="bottom" id="Mgw-eX-5h5"/>
                                     <constraint firstItem="KDq-JA-cJu" firstAttribute="leading" secondItem="Hsn-gZ-B4Q" secondAttribute="leading" id="VyT-bE-MRZ"/>
                                     <constraint firstItem="KDq-JA-cJu" firstAttribute="top" secondItem="Hsn-gZ-B4Q" secondAttribute="top" id="Xj6-Ze-ie7"/>
+                                    <constraint firstItem="hHt-9W-aYc" firstAttribute="centerX" secondItem="Hsn-gZ-B4Q" secondAttribute="centerX" id="lG9-i4-F2D"/>
                                     <constraint firstAttribute="trailing" secondItem="KDq-JA-cJu" secondAttribute="trailing" id="wZh-Vv-Dc4"/>
                                 </constraints>
                                 <connections>
+                                    <outlet property="activityIndicator" destination="hHt-9W-aYc" id="T3N-BR-CZu"/>
                                     <outlet property="imageView" destination="KDq-JA-cJu" id="UnF-BQ-7ls"/>
                                 </connections>
                             </collectionViewCell>

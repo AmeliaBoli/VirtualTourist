@@ -13,9 +13,12 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
 
     let flickrInterface = FlickrInterface.sharedInstance
     var pinLocation: PinLocation!
-    var stack: CoreDataStack!
+    var context: NSManagedObjectContext
 
     var parentPhotosViewController: PhotosViewController?
+
+    var showPlaceholders = true
+    let defaultNumberOfItemsToShow = 15
 
     let numberOfColumns: CGFloat = 3
     let spacing: CGFloat = 10
@@ -31,7 +34,7 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
                 #endif
                 return
         }
-        self.stack = stack
+        context = stack.context
 
         // Create a fetchrequest
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
@@ -39,18 +42,35 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
         fetchRequest.sortDescriptors = []
 
         // Create the FetchedResultsController
-        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: stack.context, sectionNameKeyPath: nil, cacheName: nil)
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
-        
-        if collectionView?.numberOfItems(inSection: 0) == 0 {
-            getPhotos()
+
+        if let fetchedObjects = fetchedResultsController?.fetchedObjects {
+            if fetchedObjects.count == 0 {
+                getPhotos() { success in
+                    guard success else {
+                        #if DEBUG
+                            print("There was a problem with getPhotos()")
+                        #endif
+                        return
+                    }
+                    self.loadImages()
+                }
+            }
         }
     }
 
-    func getPhotos() {
+    func getPhotos(completionHandler: @escaping (_ success: Bool) -> Void) {
+
+        //showPlaceholders = true
+
+//        DispatchQueue.main.async {
+//            self.collectionView?.reloadData()
+//        }
+        //collectionView?.reloadData()
 
         if let parentVC = parent as? PhotosViewController {
             parentVC.newCollectionButton.isEnabled = false
@@ -83,21 +103,29 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
                         DispatchQueue.main.sync {
                             parentVC.noImagesLabel.isHidden = false
                             parentVC.newCollectionButton.isEnabled = true
+                            //self.showPlaceholders = false
                         }
                     }
+                    completionHandler(false)
                     return
             }
 
-            if self.collectionView?.numberOfItems(inSection: 0) == 0,
-                let parentVC = self.parent as? PhotosViewController {
-                DispatchQueue.main.sync {
-                    parentVC.activityIndicator.stopAnimating()
-                }
-                DispatchQueue.main.sync {
-                    parentVC.noImagesLabel.isHidden = false
-                    parentVC.newCollectionButton.isEnabled = true
+            if let fetchedResults = self.fetchedResultsController?.fetchedObjects {
+
+                if fetchedResults.count == 0,
+                    let parentVC = self.parent as? PhotosViewController {
+                    DispatchQueue.main.sync {
+                        parentVC.activityIndicator.stopAnimating()
+                    }
+                    DispatchQueue.main.sync {
+                        parentVC.newCollectionButton.isEnabled = true
+                    }
                 }
             }
+
+            //self.showPlaceholders = false
+            self.collectionView?.reloadData()
+            completionHandler(true)
         }
     }
 
@@ -117,12 +145,54 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
         for photo in photos {
             stack.context.delete(photo)
         }
-        getPhotos()
 
-        //        if let parentVC = self.parent as? PhotosViewController {
-        //            parentVC.activityIndicator.stopAnimating()
-        //        }
+        //collectionView?.reloadData()
+
+        getPhotos() { success in
+            guard success else {
+                #if DEBUG
+                    print("There was a problem with getPhotos()")
+                #endif
+                return
+            }
+            //self.collectionView?.reloadData()
+            self.loadImages()
+        }
     }
+
+    func loadImages() {
+        guard let photos = fetchedResultsController?.fetchedObjects as? [Photo] else {
+            #if DEBUG
+                print("The photos could not be found")
+            #endif
+            return
+        }
+
+        for photo in photos {
+            flickrInterface.fetchImage(photo: photo)
+            if let thisPhotosIndexPath = fetchedResultsController?.indexPath(forObject: photo) {
+                DispatchQueue.main.async {
+                    self.collectionView?.reloadItems(at: [thisPhotosIndexPath])
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.collectionView?.reloadData()
+                }
+            }
+        }
+    }
+
+//    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+//        if showPlaceholders {
+//            return defaultNumberOfItemsToShow
+//        } else {
+//            if let fetchedObjects = fetchedResultsController?.fetchedObjects {
+//                return fetchedObjects.count
+//            } else {
+//                return 0
+//            }
+//        }
+//    }
 
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         var cell = PhotoCollectionViewCell()
@@ -131,10 +201,18 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
             cell = reusableCell
         }
 
-        let photo = fetchedResultsController!.object(at: indexPath) as! Photo
-        let image = UIImage(data: photo.image! as Data)
-        cell.imageView.image = image
-
+        if let photo = fetchedResultsController?.object(at: indexPath) as? Photo {
+            if let imageData = photo.image {
+                cell.activityIndicator.stopAnimating()
+                cell.backgroundColor = UIColor.clear
+                let image = UIImage(data: imageData as Data)
+                cell.imageView.image = image
+            } else {
+                cell.backgroundColor = UIColor(red: 0.3477, green: 0.4883, blue: 0.5664, alpha: 1)
+                cell.imageView.image = nil
+                cell.activityIndicator.startAnimating()
+            }
+        }
         return cell
     }
 
@@ -157,7 +235,9 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
 
     override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         let visibleCells = collectionView.visibleCells
-        if visibleCells.count == 0 && collectionView.numberOfItems(inSection: 0) > 0,
+        if visibleCells.count == 0,
+            let fetchedResults = fetchedResultsController?.fetchedObjects,
+            fetchedResults.count > 0,
             let parentVC = self.parent as? PhotosViewController {
             parentVC.noImagesLabel.isHidden = true
             parentVC.activityIndicator.stopAnimating()

@@ -12,6 +12,7 @@
         <relationship name="pinLocation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PinLocation" inverseName="photo" inverseEntity="PinLocation" syncable="YES"/>
     </entity>
     <entity name="PinLocation" representedClassName=".PinLocation" syncable="YES">
+        <attribute name="flickrPlaceId" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="latitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES" syncable="YES"/>
         <attribute name="longitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES" syncable="YES"/>
         <relationship name="flickrStats" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FlickrStats" inverseName="pinLocation" inverseEntity="FlickrStats" syncable="YES"/>
@@ -20,6 +21,6 @@
     <elements>
         <element name="FlickrStats" positionX="-45" positionY="27" width="128" height="90"/>
         <element name="Photo" positionX="-54" positionY="36" width="128" height="105"/>
-        <element name="PinLocation" positionX="-63" positionY="-18" width="128" height="105"/>
+        <element name="PinLocation" positionX="-63" positionY="-18" width="128" height="120"/>
     </elements>
 </model>
