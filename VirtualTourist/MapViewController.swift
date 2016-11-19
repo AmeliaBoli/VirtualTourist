@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  MapViewController.swift
 //  VirtualTourist
 //
 //  Created by Amelia Boli on 10/22/16.
@@ -10,7 +10,7 @@ import UIKit
 import MapKit
 import CoreData
 
-class ViewController: UIViewController, MKMapViewDelegate {
+class MapViewController: UIViewController, MKMapViewDelegate {
 
     @IBOutlet weak var mapView: MKMapView!
 
@@ -47,17 +47,12 @@ class ViewController: UIViewController, MKMapViewDelegate {
                 self.pinLocations.append(annotation)
             }
         }
-
-        loadMap()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
         navigationController?.setNavigationBarHidden(true, animated: false)
-    }
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+        loadMap()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -68,7 +63,13 @@ class ViewController: UIViewController, MKMapViewDelegate {
     func loadMap() {
         if !checkForFirstLaunch(),
             let region = mapManager.getRegion() {
-            mapView.setRegion(region, animated: false)
+
+            let adjustedLatitudeDelta = region.span.latitudeDelta * 0.86
+            let adjustedLongitdueDelta = region.span.longitudeDelta * 0.86
+            let adjustedSpan = MKCoordinateSpan(latitudeDelta: adjustedLatitudeDelta, longitudeDelta: adjustedLongitdueDelta)
+            let adjustedRegion = MKCoordinateRegion(center: region.center, span: adjustedSpan)
+
+            mapView.setRegion(adjustedRegion, animated: false)
             mapView.addAnnotations(pinLocations)
             return
         }
@@ -93,7 +94,7 @@ class ViewController: UIViewController, MKMapViewDelegate {
     }
 
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        mapManager.setRegion(region: mapView.region)
+        saveMapState()
     }
 
     // I got this code from this Stack Overflow post: http://stackoverflow.com/questions/34431459/ios-swift-how-to-add-pinpoint-to-map-on-touch-and-get-detailed-address-of-th

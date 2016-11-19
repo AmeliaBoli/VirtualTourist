@@ -10,10 +10,10 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--View Controller-->
+        <!--Map View Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController id="BYZ-38-t0r" customClass="ViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="BYZ-38-t0r" customClass="MapViewController" customModule="VirtualTourist" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="y3c-jy-aDJ"/>
                         <viewControllerLayoutGuide type="bottom" id="wfy-db-euE"/>
@@ -73,7 +73,7 @@
                                     <barButtonItem style="plain" systemItem="flexibleSpace" id="3z7-96-paC"/>
                                     <barButtonItem title="New Collection" id="mEk-rN-BY7">
                                         <connections>
-                                            <action selector="newCollectionPressed:" destination="oZq-Bv-2Kz" id="Yz2-L5-MK6"/>
+                                            <action selector="bottomButtonPressed:" destination="oZq-Bv-2Kz" id="8UZ-WY-sIi"/>
                                         </connections>
                                     </barButtonItem>
                                     <barButtonItem style="plain" systemItem="flexibleSpace" id="wK3-qb-ZRb"/>
@@ -96,7 +96,7 @@
                             </label>
                             <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="O9X-8o-FkP">
                                 <rect key="frame" x="169" y="405" width="37" height="37"/>
-                                <color key="color" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <color key="color" red="0.34907501940000002" green="0.50051766630000005" blue="0.567614913" alpha="1" colorSpace="calibratedRGB"/>
                             </activityIndicatorView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -120,8 +120,8 @@
                     </view>
                     <connections>
                         <outlet property="activityIndicator" destination="O9X-8o-FkP" id="AUf-cY-JuY"/>
+                        <outlet property="bottomButton" destination="mEk-rN-BY7" id="GGV-i2-XDE"/>
                         <outlet property="mapView" destination="gwi-Rn-pOz" id="nbb-0w-nS6"/>
-                        <outlet property="newCollectionButton" destination="mEk-rN-BY7" id="sfF-77-bKq"/>
                         <outlet property="noImagesLabel" destination="ByT-e6-aH6" id="ZTl-3o-80w"/>
                     </connections>
                 </viewController>
@@ -158,19 +158,28 @@
                                         <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="hHt-9W-aYc">
                                             <rect key="frame" x="15" y="15" width="20" height="20"/>
                                         </activityIndicatorView>
+                                        <view hidden="YES" alpha="0.59999999999999998" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="2Hh-qA-TVB">
+                                            <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                                            <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                        </view>
                                     </subviews>
                                 </view>
                                 <constraints>
+                                    <constraint firstAttribute="bottom" secondItem="2Hh-qA-TVB" secondAttribute="bottom" id="3Q0-Bf-VJM"/>
                                     <constraint firstItem="hHt-9W-aYc" firstAttribute="centerY" secondItem="Hsn-gZ-B4Q" secondAttribute="centerY" id="HJx-YI-wEn"/>
+                                    <constraint firstItem="2Hh-qA-TVB" firstAttribute="leading" secondItem="Hsn-gZ-B4Q" secondAttribute="leading" id="Kiv-zk-At8"/>
                                     <constraint firstAttribute="bottom" secondItem="KDq-JA-cJu" secondAttribute="bottom" id="Mgw-eX-5h5"/>
                                     <constraint firstItem="KDq-JA-cJu" firstAttribute="leading" secondItem="Hsn-gZ-B4Q" secondAttribute="leading" id="VyT-bE-MRZ"/>
                                     <constraint firstItem="KDq-JA-cJu" firstAttribute="top" secondItem="Hsn-gZ-B4Q" secondAttribute="top" id="Xj6-Ze-ie7"/>
                                     <constraint firstItem="hHt-9W-aYc" firstAttribute="centerX" secondItem="Hsn-gZ-B4Q" secondAttribute="centerX" id="lG9-i4-F2D"/>
+                                    <constraint firstAttribute="trailing" secondItem="2Hh-qA-TVB" secondAttribute="trailing" id="uQN-pD-uAp"/>
+                                    <constraint firstItem="2Hh-qA-TVB" firstAttribute="top" secondItem="Hsn-gZ-B4Q" secondAttribute="top" id="vcr-Ta-Cu1"/>
                                     <constraint firstAttribute="trailing" secondItem="KDq-JA-cJu" secondAttribute="trailing" id="wZh-Vv-Dc4"/>
                                 </constraints>
                                 <connections>
                                     <outlet property="activityIndicator" destination="hHt-9W-aYc" id="T3N-BR-CZu"/>
                                     <outlet property="imageView" destination="KDq-JA-cJu" id="UnF-BQ-7ls"/>
+                                    <outlet property="maskingView" destination="2Hh-qA-TVB" id="cJl-Gh-Q40"/>
                                 </connections>
                             </collectionViewCell>
                         </cells>

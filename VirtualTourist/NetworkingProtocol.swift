@@ -13,7 +13,7 @@ protocol Networking {
     func urlFromComponents(scheme: String, host: String, path: String?, withPathExtension: String?, parameters: [String: Any]?) -> URL?
     func taskForHTTPMethod(request: URLRequest, completionHandlerForMethod: @escaping (_ result: Data?, _ error: NSError?) -> Void) -> URLSessionDataTask
     func deserializeJSONWithCompletionHandler(data: Data, completionHandlerForDeserializeJSON: (_ result: Any?, _ error: Error?) -> Void)
-    func sendError(error: String, domain: String, completionHandlerForSendError: (_ result: Data?, _ error: NSError?) -> Void)
+    func sendError(error: String, domain: String, code: Int, completionHandlerForSendError: (_ result: Data?, _ error: NSError?) -> Void)
     func manageNetworkIndicator(turnOn: Bool)
 }
 
@@ -70,13 +70,13 @@ extension Networking {
                 if (error! as NSError).code == -1009 {
                     errorString = "We couldn't log you in. There seems to be a problem with your network connection."
                 }
-                self.sendError(error: errorString, domain: domain, completionHandlerForSendError: completionHandlerForMethod)
+                self.sendError(error: errorString, domain: domain, code: -1009, completionHandlerForSendError: completionHandlerForMethod)
                 return
             }
 
             /* GUARD: Did we get a successful 2XX response? */
             guard let statusCode = (response as? HTTPURLResponse)?.statusCode else {
-                self.sendError(error: "There seems to be no status code", domain: domain, completionHandlerForSendError: completionHandlerForMethod)
+                self.sendError(error: "There seems to be no status code", domain: domain, code: 1, completionHandlerForSendError: completionHandlerForMethod)
                 return
             }
 
@@ -87,13 +87,13 @@ extension Networking {
                     errorString = "We couldn't log you in. Your username or password seem incorrect."
                 }
 
-                self.sendError(error: errorString, domain: domain, completionHandlerForSendError: completionHandlerForMethod)
+                self.sendError(error: errorString, domain: domain, code: 1, completionHandlerForSendError: completionHandlerForMethod)
                 return
             }
 
             /* GUARD: Was there any data returned? */
             guard let data = data else {
-                self.sendError(error: "No data was returned by the request!", domain: domain, completionHandlerForSendError: completionHandlerForMethod)
+                self.sendError(error: "No data was returned by the request!", domain: domain, code: 1, completionHandlerForSendError: completionHandlerForMethod)
                 return
             }
 
@@ -111,18 +111,18 @@ extension Networking {
         do {
             parsedData = try JSONSerialization.jsonObject(with: data, options: .allowFragments)
         } catch {
-            sendError(error: "There is an error deserializing the JSON file", domain: "deserializeJSON", completionHandlerForSendError: completionHandlerForDeserializeJSON)
+            sendError(error: "There is an error deserializing the JSON file", domain: "deserializeJSON", code: 2, completionHandlerForSendError: completionHandlerForDeserializeJSON)
         }
         completionHandlerForDeserializeJSON(parsedData, nil)
     }
 
     // MARK: Extension Helpers
-    func sendError(error: String, domain: String, completionHandlerForSendError: (_ result: Data?, _ error: NSError?) -> Void) {
+    func sendError(error: String, domain: String, code: Int, completionHandlerForSendError: (_ result: Data?, _ error: NSError?) -> Void) {
         #if DEBUG
             print(error)
         #endif
         let userInfo = [NSLocalizedDescriptionKey : error]
-        let nsError = NSError(domain: domain, code: 1, userInfo: userInfo)
+        let nsError = NSError(domain: domain, code: code, userInfo: userInfo)
         completionHandlerForSendError(nil, nsError)
     }
 
@@ -133,6 +133,22 @@ extension Networking {
             application.isNetworkActivityIndicatorVisible = true
         } else if !turnOn && application.isNetworkActivityIndicatorVisible {
             application.isNetworkActivityIndicatorVisible = false
+        }
+    }
+}
+
+enum ErrorCode: Int {
+    case networking = 1
+    case inApp = 2
+    case noPlaceId = 3
+    case connection = -1009
+
+    var userMessage: String {
+        switch self {
+        case .networking: return "There was a problem connecting with Flickr"
+        case .inApp: return "There was an internal error"
+        case .connection: return "There seems to be a problem with your network connection"
+        case .noPlaceId: return "Flickr has no photos for that location"
         }
     }
 }

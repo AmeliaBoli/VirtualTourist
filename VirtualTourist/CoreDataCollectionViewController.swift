@@ -110,9 +110,8 @@ extension CoreDataCollectionViewController: NSFetchedResultsControllerDelegate {
         case .update:
             updatedIndexPaths.append(indexPath!)
         case .move:
+            // We are not accounting for a "move" action in this app
             return
-            //deletedIndexPaths.append(indexPath!)
-            //insertedIndexPaths.append(newIndexPath!)
         }
     }
 
@@ -129,7 +128,19 @@ extension CoreDataCollectionViewController: NSFetchedResultsControllerDelegate {
             for indexPath in self.updatedIndexPaths {
                 self.collectionView?.reloadItems(at: [indexPath])
             }
-        }, completion: nil)
+        }, completion: { success in
+            if success {
+                self.controllerCleanupPostChanges(success: success)
+            } else {
+                #if DEBUG
+                    print("There was a problem completing the fetched results controller changes")
+                #endif
+            }
+        })
+    }
+
+    // MARK: Methods for subclass to override
+    func controllerCleanupPostChanges(success: Bool) {
+
     }
 }
-

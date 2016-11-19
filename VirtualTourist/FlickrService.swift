@@ -59,6 +59,7 @@ class FlickrService: Networking {
         static let Json = "json"
         static let DisableJSONCallback = "1" /* 1 means "yes" */
         static let MediumUrl = "url_m"
+        static let DateUpload = "date_upload"
     }
 
     // JSON Body Keys
@@ -80,7 +81,7 @@ class FlickrService: Networking {
 
         guard let url = urlFromComponents(scheme: Constants.Scheme, host: Constants.Host, path: Constants.Path, withPathExtension: nil, parameters: parameters) else {
             let error = "There was a problem creating the url to make the request"
-            let nsError = createError(error: error, domain: domain)
+            let nsError = createError(error: error, domain: domain, code: 2)
             completionHandlerForPlaces(false, nil, nsError)
             return
         }
@@ -88,6 +89,9 @@ class FlickrService: Networking {
         let request = URLRequest(url: url)
 
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
+        #if DEBUG
+            print("Flickr service starting")
+        #endif
         _ = taskForHTTPMethod(request: request) { result, error in
             UIApplication.shared.isNetworkActivityIndicatorVisible = false
             guard error == nil else {
@@ -100,7 +104,7 @@ class FlickrService: Networking {
 
             guard let serializedData = result else {
                 let error = "There was an error acessing the returned data"
-                let nsError = self.createError(error: error, domain: domain)
+                let nsError = self.createError(error: error, domain: domain, code: 2)
                 completionHandlerForPlaces(false, nil, nsError)
                 return
             }
@@ -116,12 +120,18 @@ class FlickrService: Networking {
 
                 guard let jsonData = result as? [String: Any],
                     let placeDataDict = jsonData["places"] as? [String: Any],
-                    let placeData = placeDataDict["place"] as? [[String: Any]],
-                    placeData.count > 0 else {
-                        let error = "There was an error with results key in \(result) or no place exists"
-                        let nsError = self.createError(error: error, domain: domain)
+                    let placeData = placeDataDict["place"] as? [[String: Any]] else {
+                        let error = "There was an error with results key in \(result)"
+                        let nsError = self.createError(error: error, domain: domain, code: 2)
                         completionHandlerForPlaces(false, nil, nsError)
                         return
+                }
+
+                guard placeData.count > 0 else {
+                    let error = "There were no place ids for the location"
+                    let nsError = self.createError(error: error, domain: domain, code: 3)
+                    completionHandlerForPlaces(false, nil, nsError)
+                    return
                 }
 
                 for data in placeData {
@@ -129,7 +139,7 @@ class FlickrService: Networking {
                         completionHandlerForPlaces(true, placeId, nil)
                     } else {
                         let error = "There was an error finding the place ID in the deserialized data"
-                        let nsError = self.createError(error: error, domain: domain)
+                        let nsError = self.createError(error: error, domain: domain, code: 2)
                         completionHandlerForPlaces(false, nil, nsError)
                         return
                     }
@@ -147,13 +157,13 @@ class FlickrService: Networking {
                                          ParameterKeys.PlaceId: placeId,
                                          ParameterKeys.PerPage: Constants.ImagesPerPage,
                                          ParameterKeys.Page: nextPage,
-                                         ParameterKeys.Extras: ParameterValues.MediumUrl,
+                                         ParameterKeys.Extras: "\(ParameterValues.MediumUrl), \(ParameterValues.DateUpload)",
                                          ParameterKeys.Format: ParameterValues.Json,
                                          ParameterKeys.NoJSONCallback: ParameterValues.DisableJSONCallback]
 
         guard let url = urlFromComponents(scheme: Constants.Scheme, host: Constants.Host, path: Constants.Path, withPathExtension: nil, parameters: parameters) else {
             let error = "There was a problem creating the url to make the request"
-            let nsError = createError(error: error, domain: domain)
+            let nsError = createError(error: error, domain: domain, code: 2)
             completionHandlerForGetPhotos(false, nil, nsError)
             return
         }
@@ -174,7 +184,7 @@ class FlickrService: Networking {
 
             guard let serializedData = result else {
                 let error = "There was an error acessing the returned data"
-                let nsError = self.createError(error: error, domain: domain)
+                let nsError = self.createError(error: error, domain: domain, code: 2)
                 completionHandlerForGetPhotos(false, nil, nsError)
                 return
             }
@@ -190,7 +200,7 @@ class FlickrService: Networking {
 
                 guard let jsonData = result as? [String: Any] else {
                         let error = "There was an error with parsing the data in \(result)"
-                        let nsError = self.createError(error: error, domain: domain)
+                    let nsError = self.createError(error: error, domain: domain, code: 2)
                         completionHandlerForGetPhotos(false, nil, nsError)
                         return
                 }
@@ -201,14 +211,13 @@ class FlickrService: Networking {
     }
 
     // Helper Method
-    func createError(error: String, domain: String) -> NSError {
+    func createError(error: String, domain: String, code: Int) -> NSError {
         #if DEBUG
             print(error)
         #endif
         let domain = domain
         let userInfo = [NSLocalizedDescriptionKey : error]
-        let nsError = NSError(domain: domain, code: 1, userInfo: userInfo)
+        let nsError = NSError(domain: domain, code: code, userInfo: userInfo)
         return nsError
     }
-
 }

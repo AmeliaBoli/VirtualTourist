@@ -2,7 +2,7 @@
 //  Photo+CoreDataProperties.swift
 //  VirtualTourist
 //
-//  Created by Amelia Boli on 11/6/16.
+//  Created by Amelia Boli on 11/17/16.
 //  Copyright © 2016 Appogenic. All rights reserved.
 //
 
@@ -38,6 +38,8 @@ extension Photo {
     }
 
     @NSManaged public var url: String?
+    @NSManaged public var isSelected: Bool
     @NSManaged public var pinLocation: PinLocation?
+    @NSManaged public var dateUpload: Date
 
 }

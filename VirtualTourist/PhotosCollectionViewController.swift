@@ -9,11 +9,11 @@
 import UIKit
 import CoreData
 
-class PhotosCollectionViewController: CoreDataCollectionViewController, UICollectionViewDelegateFlowLayout {
+class PhotosCollectionViewController: CoreDataCollectionViewController, UICollectionViewDelegateFlowLayout, AlertController {
 
     let flickrInterface = FlickrInterface.sharedInstance
     var pinLocation: PinLocation!
-    var context: NSManagedObjectContext
+    var context: NSManagedObjectContext!
 
     var parentPhotosViewController: PhotosViewController?
 
@@ -22,6 +22,22 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
 
     let numberOfColumns: CGFloat = 3
     let spacing: CGFloat = 10
+
+    var itemsAreSelected: Bool {
+        guard let photos = fetchedResultsController?.fetchedObjects as? [Photo] else {
+            #if DEBUG
+                print("There were no fetched items to check for selection")
+            #endif
+            return false
+        }
+
+        for photo in photos {
+            if photo.isSelected {
+                return true
+            }
+        }
+        return false
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,7 +55,7 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
         // Create a fetchrequest
         let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Photo")
         fetchRequest.predicate = NSPredicate(format: "pinLocation = %@", argumentArray: [pinLocation])
-        fetchRequest.sortDescriptors = []
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "dateUpload", ascending: false)]
 
         // Create the FetchedResultsController
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: context, sectionNameKeyPath: nil, cacheName: nil)
@@ -47,7 +63,10 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
+        loadPhotos()
+    }
 
+    func loadPhotos() {
         if let fetchedObjects = fetchedResultsController?.fetchedObjects {
             if fetchedObjects.count == 0 {
                 getPhotos() { success in
@@ -64,29 +83,16 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
     }
 
     func getPhotos(completionHandler: @escaping (_ success: Bool) -> Void) {
-
-        //showPlaceholders = true
-
-//        DispatchQueue.main.async {
-//            self.collectionView?.reloadData()
-//        }
-        //collectionView?.reloadData()
-
         if let parentVC = parent as? PhotosViewController {
-            parentVC.newCollectionButton.isEnabled = false
+            parentVC.bottomButton.isEnabled = false
             parentVC.activityIndicator.startAnimating()
             parentVC.noImagesLabel.isHidden = true
         }
 
-        flickrInterface.getPhotos(pinLocation: pinLocation) { success, error, photos in
-
-            //            if let parentVC = self.parent as? PhotosViewController {
-            //                parentVC.newCollectionButton.isEnabled = true
-            //            }
+        flickrInterface.getPhotos(pinLocation: pinLocation) { success, error in
 
             guard success,
-                error == nil,
-                photos != nil else {
+                error == nil else {
                     var generalError = "There was a problem retrieving photos from Flickr"
 
                     if let error = error {
@@ -96,45 +102,58 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
                     #if DEBUG
                         print(generalError)
                     #endif
+
+                    if generalError == ErrorCode.connection.userMessage {
+                        self.presentAlertWithTryAgainAction(errorMessage: generalError, handler: self.tryAgain)
+                    } else if generalError != ErrorCode.noPlaceId.userMessage {
+                        self.createAlertControllerWithNoActions(message: generalError)
+                    }
+
                     if let parentVC = self.parent as? PhotosViewController {
                         DispatchQueue.main.sync {
                             parentVC.activityIndicator.stopAnimating()
                         }
                         DispatchQueue.main.sync {
                             parentVC.noImagesLabel.isHidden = false
-                            parentVC.newCollectionButton.isEnabled = true
-                            //self.showPlaceholders = false
+                            parentVC.bottomButton.isEnabled = true
                         }
                     }
                     completionHandler(false)
                     return
             }
 
+            try? self.fetchedResultsController?.performFetch()
             if let fetchedResults = self.fetchedResultsController?.fetchedObjects {
-
                 if fetchedResults.count == 0,
                     let parentVC = self.parent as? PhotosViewController {
                     DispatchQueue.main.sync {
                         parentVC.activityIndicator.stopAnimating()
                     }
                     DispatchQueue.main.sync {
-                        parentVC.newCollectionButton.isEnabled = true
+                        parentVC.noImagesLabel.isHidden = false
+                        parentVC.bottomButton.isEnabled = true
                     }
                 }
             }
 
-            //self.showPlaceholders = false
             self.collectionView?.reloadData()
             completionHandler(true)
         }
     }
 
-    func refreshPhotos() {
-        //        if let parentVC = self.parent as? PhotosViewController {
-        //            parentVC.noImagesLabel.isHidden = true
-        //            //parentVC.activityIndicator.startAnimating()
-        //        }
+    func tryAgain(alert: UIAlertAction) {
+        loadPhotos()
+    }
 
+    func bottomButtonPressed() {
+        if itemsAreSelected {
+            deleteSelectedPhotos()
+        } else {
+            refreshPhotos()
+        }
+    }
+
+    func refreshPhotos() {
         guard let photos = fetchedResultsController?.fetchedObjects as? [Photo] else {
             #if DEBUG
                 print("The photos fetched by the fetchedResultsController could not be retrieved")
@@ -143,10 +162,8 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
         }
 
         for photo in photos {
-            stack.context.delete(photo)
+            context.delete(photo)
         }
-
-        //collectionView?.reloadData()
 
         getPhotos() { success in
             guard success else {
@@ -155,7 +172,6 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
                 #endif
                 return
             }
-            //self.collectionView?.reloadData()
             self.loadImages()
         }
     }
@@ -182,17 +198,30 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
         }
     }
 
-//    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-//        if showPlaceholders {
-//            return defaultNumberOfItemsToShow
-//        } else {
-//            if let fetchedObjects = fetchedResultsController?.fetchedObjects {
-//                return fetchedObjects.count
-//            } else {
-//                return 0
-//            }
-//        }
-//    }
+    func deleteSelectedPhotos() {
+        guard let photos = fetchedResultsController?.fetchedObjects as? [Photo] else {
+            #if DEBUG
+                print("There was a problem finding all of the current photos")
+            #endif
+            return
+        }
+
+        for photo in photos {
+            if photo.isSelected == true {
+                context.delete(photo)
+            }
+        }
+    }
+
+    func setBottomButtonTitle() {
+        if let parentVC = self.parent as? PhotosViewController {
+            if itemsAreSelected {
+                parentVC.bottomButton.title = "Remove Selected Photos"
+            } else {
+                parentVC.bottomButton.title = "New Collection"
+            }
+        }
+    }
 
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         var cell = PhotoCollectionViewCell()
@@ -207,6 +236,12 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
                 cell.backgroundColor = UIColor.clear
                 let image = UIImage(data: imageData as Data)
                 cell.imageView.image = image
+
+                if photo.isSelected {
+                    cell.maskingView.isHidden = false
+                } else {
+                    cell.maskingView.isHidden = true
+                }
             } else {
                 cell.backgroundColor = UIColor(red: 0.3477, green: 0.4883, blue: 0.5664, alpha: 1)
                 cell.imageView.image = nil
@@ -224,12 +259,18 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
     }
 
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let photoToDelete = fetchedResultsController?.object(at: indexPath) as! Photo
-        fetchedResultsController?.managedObjectContext.delete(photoToDelete)
+        if let photo = fetchedResultsController?.object(at: indexPath) as? Photo {
+            if photo.isSelected {
+                photo.isSelected = false
+            } else {
+                photo.isSelected = true
+            }
+            collectionView.reloadItems(at: [indexPath])
+            setBottomButtonTitle()
+        }
     }
 
     override func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
-        print("\(newIndexPath?.row) \(type.rawValue)")
         super.controller(controller, didChange: anObject, at: indexPath, for: type, newIndexPath: newIndexPath)
     }
 
@@ -241,7 +282,11 @@ class PhotosCollectionViewController: CoreDataCollectionViewController, UICollec
             let parentVC = self.parent as? PhotosViewController {
             parentVC.noImagesLabel.isHidden = true
             parentVC.activityIndicator.stopAnimating()
-            parentVC.newCollectionButton.isEnabled = true
+            parentVC.bottomButton.isEnabled = true
         }
+    }
+
+    override func controllerCleanupPostChanges(success: Bool) {
+        setBottomButtonTitle()
     }
 }

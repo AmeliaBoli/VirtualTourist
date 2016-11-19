@@ -13,7 +13,7 @@ import CoreData
 
 public class Photo: NSManagedObject {
 
-    convenience init(photoId: Int64?, url: String, context: NSManagedObjectContext) {
+    convenience init(photoId: Int64?, url: String, dateUpload: Date, context: NSManagedObjectContext) {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate,
             let stack = appDelegate.stack else {
                 fatalError("Photo: init: The App Delegate or stack could not be found")
@@ -25,6 +25,8 @@ public class Photo: NSManagedObject {
             self.init(entity: entity, insertInto: context)
             self.photoId = photoId
             self.url = url
+            self.isSelected = false
+            self.dateUpload = dateUpload
         } else {
             fatalError("A Photo could not be created")
         }

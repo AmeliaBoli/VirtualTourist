@@ -36,7 +36,7 @@ struct CoreDataStack {
 
         // Try to create the model from the URL
         guard let model = NSManagedObjectModel(contentsOf: modelURL) else {
-            print("unable to create a model from \(modelURL)")
+            print("Unable to create a model from \(modelURL)")
             return nil
         }
         self.model = model
@@ -72,7 +72,7 @@ struct CoreDataStack {
         do {
             try addStoreCoordinator(storeType: NSSQLiteStoreType, configuration: nil, storeURL: dbURL, options: options)
         } catch {
-            print("unable to add store at \(dbURL)")
+            print("Unable to add store at \(dbURL)")
         }
     }
 

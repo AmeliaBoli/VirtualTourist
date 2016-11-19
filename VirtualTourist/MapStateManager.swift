@@ -12,14 +12,11 @@ import MapKit
 class MapStateManager {
 
     static let sharedInstance = MapStateManager()
+    private init() { }
 
     private var region: MKCoordinateRegion? = nil
 
     let userDefaults = UserDefaults.standard
-
-    private init() {
-
-    }
 
     func setRegion(region: MKCoordinateRegion) {
         self.region = region
@@ -40,43 +37,39 @@ class MapStateManager {
             return
         }
 
-        print("=========== Save Map\n---Region is \(region)")
         let center = region.center
-        let centerLatitude = Double(center.latitude)
-        let centerLongitude = Double(center.longitude)
+        let centerLatitude = Float(center.latitude)
+        let centerLongitude = Float(center.longitude)
         let centerCoordinate = ["latitude": centerLatitude, "longitude": centerLongitude]
 
         let span = region.span
-        let latitudeDelta = Double(span.latitudeDelta)
-        let longitudeDelta = Double(span.longitudeDelta)
+        let latitudeDelta = Float(span.latitudeDelta)
+        let longitudeDelta = Float(span.longitudeDelta)
         let coordinateSpan = ["latitudeDelta": latitudeDelta, "longitudeDelta": longitudeDelta]
 
         let state = ["center": centerCoordinate, "span": coordinateSpan] as [String : Any]
-        print("---State is \(state)")
         userDefaults.set(state, forKey: "state")
     }
 
     func retrieveSavedMapState() {
 
         guard let state = userDefaults.dictionary(forKey: "state"),
-            let center = state["center"] as? [String: Double],
+            let center = state["center"] as? [String: Float],
             let latitude = center["latitude"],
             let longitude = center["longitude"],
-            let span = state["span"] as? [String: Double],
+            let span = state["span"] as? [String: Float],
             let latitudeDelta = span["latitudeDelta"],
             let longitudeDelta = span["longitudeDelta"] else {
 
                 #if DEBUG
-                    print("MapStateManager: retrieveSAvedMapState: There was a problem retrieving the saved region from user defaults")
+                    print("MapStateManager: retrieveSavedMapState: There was a problem retrieving the saved region from user defaults")
                 #endif
                 return
         }
 
-        print("============ Retrieve Map\nState is \(state)")
-        let centerCoordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        let spanCoordinates = MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta)
+        let centerCoordinate = CLLocationCoordinate2D(latitude: CLLocationDegrees(latitude), longitude: CLLocationDegrees(longitude))
+        let spanCoordinates = MKCoordinateSpan(latitudeDelta: CLLocationDegrees(latitudeDelta), longitudeDelta: CLLocationDegrees(longitudeDelta))
         let region = MKCoordinateRegion(center: centerCoordinate, span: spanCoordinates)
-        print("---Region is \(region)")
         self.region = region
     }
 }

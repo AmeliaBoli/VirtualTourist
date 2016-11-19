@@ -13,9 +13,9 @@ class PhotosViewController: UIViewController {
 
     @IBOutlet weak var label: UILabel!
     @IBOutlet weak var mapView: MKMapView!
-    @IBOutlet weak var newCollectionButton: UIBarButtonItem!
     @IBOutlet weak var noImagesLabel: UILabel!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
+    @IBOutlet weak var bottomButton: UIBarButtonItem!
 
     var pinLocation: PinLocation!
     var coordinate: CLLocationCoordinate2D!
@@ -41,10 +41,10 @@ class PhotosViewController: UIViewController {
         mapView.addAnnotation(annotation)
     }
 
-    @IBAction func newCollectionPressed(_ sender: UIBarButtonItem) {
+    @IBAction func bottomButtonPressed(_ sender: UIBarButtonItem) {
         let children = childViewControllers
         let photosCollectionVC = (children.flatMap() { $0 as? PhotosCollectionViewController }).first
-        photosCollectionVC?.refreshPhotos()
+        photosCollectionVC?.bottomButtonPressed()
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
